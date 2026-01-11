@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Face Recognition</title>
+    <style>
+        * {
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #1d2671, #3644c3);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.register-container {
+    background: #ffffff;
+    width: 450px;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    text-align: center;
+}
+
+.register-container h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.camera-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+video {
+    width: 100%;
+    border-radius: 5px;
+    border: 2px solid #ddd;
+}
+
+canvas {
+    display: none;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background: #1d2671;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #151b50;
+}
+
+#capture-button {
+    background: #55c337;
+}
+
+#capture-button:hover {
+    background: #a52a54;
+}
+
+#message {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #333;
+}
+
+    </style>
+</head>
+<body>
+
+<div class="register-container">
+    <h2>Register with Face</h2>
+
+    <form id="register-form">
+        <input type="text" id="username" placeholder="Username" required>
+
+        <div class="camera-container">
+            <video id="video" autoplay></video>
+            <canvas id="canvas"></canvas>
+            <button type="button" id="capture-button">Capture Face</button>
+        </div>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <div id="message"></div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture-button');
+    const registerForm = document.getElementById('register-form');
+    const messageDiv = document.getElementById('message');
+
+    let capturedImage = null;
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(() => {
+            messageDiv.textContent = "Camera not accessible";
+        });
+
+    captureButton.addEventListener('click', () => {
+        if (!video.srcObject) {
+            messageDiv.textContent = "Please allow camera access";
+            return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const context = canvas.getContext("2d");
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        capturedImage = canvas.toDataURL("image/jpeg");
+        messageDiv.textContent = "Face captured successfully";
+    });
+
+    registerForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        if (!capturedImage) {
+            messageDiv.textContent = "Please capture your face first";
+            return;
+        }
+
+        messageDiv.textContent = "Registration data ready to submit";
+        // send username + capturedImage to backend here
+    });
+
+
+    registerForm.onsubmit=async(e)=>{
+        e.preventDefault()
+
+        if(!capturedImage){
+            messageDiv.innerHTMl="Please capture a face first"
+            return
+        }
+        const formData=new FormData(registerForm)
+        formData.append('face_image',capturedImage)
+        const response=await fetch('/register/',{
+            method:'POST',
+            body:formData
+        });
+
+        const data=await response.data();
+        messageDiv.innerHTML=data.mediaDevices || 'Registration Failed';
+    }
+</script>
+
+</body>
+</html>
